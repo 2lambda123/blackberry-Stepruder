@@ -38,7 +38,7 @@ class ParsedHTTPRequest(BaseHTTPRequestHandler):
 
     def __init__(self, request_text):
         self.rfile = BytesIO(request_text)
-        self.raw_requestline = self.rfile.readline()
+        self.raw_requestline = self.rfile.readline(5_000_000)
         self.error_code = self.error_message = None
         self.parse_request()
 
@@ -72,7 +72,7 @@ def parse_payloads():
                 # parse payloads from the list
                 try:
                     with open(config['payloads'][key]['path'], 'r', encoding='utf-8') as payloadlist:
-                        line = payloadlist.readline()
+                        line = payloadlist.readline(5_000_000)
                         while line and line != "":
                             # payload processing befire sending
                             lineprocessed = line.strip()
@@ -83,7 +83,7 @@ def parse_payloads():
                                     if enc == "jsonencode":
                                         lineprocessed = json.dumps(lineprocessed)
                             payloads[key].append(lineprocessed)
-                            line = payloadlist.readline()
+                            line = payloadlist.readline(5_000_000)
                 except Exception:
                     print("Error - can't parse/understand payloads in config json - can't open list {0}, exiting.".format(config['payloads'][key]['path']))
                     sys.exit(1)
