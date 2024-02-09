@@ -37,18 +37,51 @@ from globals import *
 class ParsedHTTPRequest(BaseHTTPRequestHandler):
 
     def __init__(self, request_text):
+        """Parses a raw HTTP request and initializes the class attributes.
+        Parameters:
+            - request_text (bytes): The raw HTTP request text.
+        Returns:
+            - None: This function does not return anything.
+        Processing Logic:
+            - Initializes class attributes.
+            - Parses raw HTTP request.
+            - Handles error codes and messages.
+            - Handles large request texts."""
+        
         self.rfile = BytesIO(request_text)
         self.raw_requestline = self.rfile.readline(5_000_000)
         self.error_code = self.error_message = None
         self.parse_request()
 
     def send_error(self, code, message):
+        """    return "Error code: " + str(code) + ", Error message: " + message
+        Sends an error message with the specified code and message.
+        Parameters:
+            - code (int): The error code to be sent.
+            - message (str): The error message to be sent.
+        Returns:
+            - str: A string containing the error code and message.
+        Processing Logic:
+            - Sets the error code and message.
+            - Returns a string with the error code and message."""
+        
         self.error_code = code
         self.error_message = message
 
 
 # helper function to evaluate expression
 def repl(m):
+    """This function takes in a string expression and evaluates it, returning the result as a string.
+    Parameters:
+        - m (str): The string expression to be evaluated.
+    Returns:
+        - str: The result of the evaluated expression as a string.
+    Processing Logic:
+        - Extract the expression from the input string.
+        - Evaluate the expression using the eval() function.
+        - Convert the result to a string.
+        - Return the string result."""
+    
     expr = m.group(1)
     return str(eval(expr))
 
@@ -56,6 +89,20 @@ def repl(m):
 # payloads from config
 # returns number of iterations based on minimal size of payload lists
 def parse_payloads():
+    """Parse payloads from config file and return the number of iterations.
+    Parameters:
+        - config (dict): A dictionary containing the configuration settings.
+    Returns:
+        - iterations (int): The number of iterations based on the parsed payloads.
+    Processing Logic:
+        - Parses payloads from the given range or list.
+        - Handles encoding if specified in the config file.
+        - Returns the minimum number of iterations based on the number of payloads parsed.
+    Example:
+        iterations = parse_payloads()
+        print(iterations)
+        # Output: 10"""
+    
     if config['payloads']:
         iterations = sys.maxsize
         for key in config['payloads']:
@@ -99,6 +146,18 @@ def parse_payloads():
 # parse the response and retrieve the value based on json key
 # if multiple values appear the behavior is undefined
 def retrieve_responsevar_json(resp, json_exp):
+    """Function: retrieve_responsevar_json
+    Parameters:
+        - resp (requests.Response): The response object returned by the API call.
+        - json_exp (str): The expression used to retrieve the desired value from the response body.
+    Returns:
+        - str: The value retrieved from the response body using the provided expression.
+    Processing Logic:
+        - Parse the response body using the json module.
+        - Retrieve the value from the response body using the provided expression.
+        - If an error occurs, return None.
+        - If the verbose flag is set, print an error message and exit the program."""
+    
     try:
         respdict = json.loads(resp.text)    # json parse just the body of the response
         value = respdict[json_exp]    # TODO: what happens if 2 duplicate keys present? Python dictionary does not support duplicate keys BTW
@@ -114,6 +173,24 @@ def retrieve_responsevar_json(resp, json_exp):
 # if capturing group is defined in the regex - the first matching capturing group is captured
 # if capturing group is not defined in the regex - the whole match is returned
 def retrieve_responsevar_regex(resp, regex_exp):
+    """Retrieve the first match of a given regular expression in the response body or headers.
+    Parameters:
+        - resp (requests.Response): The response object to search.
+        - regex_exp (str): The regular expression to match.
+    Returns:
+        - str: The first match of the regular expression.
+    Processing Logic:
+        - Search the response body for the regular expression.
+        - If a match is found, return the first group.
+        - If no match is found, search the response headers.
+        - If a match is found, return the first group.
+        - If no match is found, return None.
+        - If an error occurs, print an error message and exit the program.
+    Example:
+        >>> resp = requests.get('https://www.example.com')
+        >>> retrieve_responsevar_regex(resp, r'<title>(.*?)</title>')
+        'Example Domain'"""
+    
     try:
         # first search the body
         value = re.search(regex_exp, resp.text)
@@ -139,6 +216,22 @@ def retrieve_responsevar_regex(resp, regex_exp):
 
 # send signle request given the request string
 def send_request(rstr, request_number, iteration_number):
+    """Sends an HTTP request to a specified URL and performs any necessary substitutions on the request.
+    Parameters:
+        - rstr (str): The HTTP request string to be sent.
+        - request_number (int): The number of the current request in the sequence.
+        - iteration_number (int): The number of the current iteration of the request sequence.
+    Returns:
+        - None: This function does not return any values.
+    Processing Logic:
+        - Performs any necessary substitutions on the request string.
+        - Evaluates any request-scope expressions in the request string.
+        - Parses the request string into an HTTP request object.
+        - Forms the URL for the request.
+        - Sends the request and receives the response.
+        - Performs any necessary substitutions on the response.
+        - Checks for a match with a specified regular expression in the response, if applicable."""
+    
 
     # embed responsevar substitutions if any
     # in first request first iteration there should be no substitutions
@@ -270,6 +363,21 @@ def send_request(rstr, request_number, iteration_number):
 
 # send the sequence of requests given the array of string requests
 def send_sequence(request_list, iteration):
+    """This function sends a sequence of requests with a specific payload substitution.
+    Parameters:
+        - request_list (list): A list of requests to be sent.
+        - iteration (int): The current iteration of the sequence.
+    Returns:
+        - None: This function does not return any value.
+    Processing Logic:
+        - Initializes the current_step_substitutions dictionary.
+        - Loops through the request_list and substitutes the payloads in each request.
+        - Uses regex to match and replace the sequence-scope variables.
+        - Sends each request using the send_request() function.
+        - Prints the status and response length for each request.
+        - Prints a message when the sequence is finished.
+        - If a logfile is provided, writes a message to the logfile."""
+    
     num = 0
     print("Iteration " + str(iteration) + " - starting sequence")
 
